@@ -1,5 +1,9 @@
 <template>
-    <canvas class="fractal-canvas" @click="onMousePressed" ref="canvas" :width="canvasWidth" :height="canvasHeight" ></canvas>
+    <div class="fractal-container">
+        <canvas class="fractal-canvas" @click="onMousePressed" ref="canvas" :width="canvasWidth" :height="canvasHeight" ></canvas>
+        <canvas class="small-fractal-canvas" ref="smallCanvas" :width="smallCanvasWidth" :height="smallCanvasHeight"></canvas>
+
+    </div>
 </template>
 
 <script>
@@ -10,11 +14,15 @@
             return {
                 canvasWidth: 100,
                 canvasHeight: 100,
+                smallCanvasWidth: 20,
+                smallCanvasHeight: 20,
                 fractalGenerator: null
             };
         },
         computed: {
-            canvas() { return this.$refs.canvas; }
+            canvas() { return this.$refs.canvas; },
+            smallCanvas() { return this.$refs.smallCanvas; }
+
         },
         destroyed() {
             window.removeEventListener('resize', this.handleResize);
@@ -23,6 +31,8 @@
             handleResize() {
                 this.canvasWidth = window.innerWidth;
                 this.canvasHeight = window.innerHeight /* * 0.5*/;
+                this.smallCanvasWidth = window.innerWidth * 0.2;
+                this.smallCanvasHeight = window.innerHeight * 0.2;
             },
             onMousePressed(event) {
                 this.fractalGenerator.onMousePressed(event);
@@ -35,7 +45,7 @@
 
             this.handleResize();
             this.$nextTick(() => {
-                this.fractalGenerator = new FRACTAL.FractalGenerator(this.canvas);
+                this.fractalGenerator = new FRACTAL.FractalGenerator(this.canvas, this.smallCanvas);
             });
 
 
@@ -142,13 +152,32 @@
 
 <style scoped>
 
-    .fractal-canvas {
-        background-color: #444;
+    .fractal-container {
         position: fixed;
         width: 100%;
         /*height: 50%;*/
         height: 100%;
         /*z-index: -1;*/
+
+    }
+
+    .fractal-canvas {
+        /*background-color: #444;*/
+        position: fixed;
+        width: 100%;
+        /*height: 50%;*/
+        height: 100%;
+        z-index: -1;
+    }
+
+    .small-fractal-canvas {
+        /*background-color: transparent;*/
+        position: fixed;
+        width: 20%;
+        height: 20%;
+        bottom: 0;
+        z-index: 0;
+        pointer-events: none;
     }
 
 </style>

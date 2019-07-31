@@ -3,10 +3,11 @@ import { TimelineMax, Expo } from "gsap";
 
 export class FractalGenerator {
 
-    constructor(canvas) {
+    constructor(canvas, smallCanvas) {
         this.canvas = canvas;
+        this.smallCanvas = smallCanvas;
         this.init();
-        this.generateFractal();
+        // this.generateFractal();
     }
 
     init() {
@@ -28,7 +29,7 @@ export class FractalGenerator {
         const far = 100; // todo tweak for performance
         this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
         this.camera.position.set(8, 0, 8); // 2, 0, 4
-        this.camera.rotation.set(0, 0, 0, "ZYX"); // 0, -0.6, 0
+        this.camera.rotation.set(0, -0.3, 0, "ZYX"); // 0, -0.6, 0
 
         // Light
         {
@@ -55,62 +56,72 @@ export class FractalGenerator {
         this.textMaterial = new THREE.MeshBasicMaterial({color: 0x000000});
 
 
-        this.pageTitles = [];
-        const loader = new THREE.FontLoader();
-
-        const self = this;
-
-        loader.load( 'http://localhost:8080/static/public/title_font.json', (font) => {
-
-            self.pages.forEach((page) => {
-
-                self.pageTitles.push(
-                    new THREE.TextGeometry( page, {
-                        font: font,
-                        size: 80,
-                        height: 1,
-                        curveSegments: 12,
-                        bevelEnabled: false
-                    })
-                );
-
-            });
-
-
-
-        });
-
-        this.lineLength = 16;
+        this.lineLength = 20;
         this.lines = [];
         this.currentDirections = [0];
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
-        // this.Line = class Line {
-        //     constructor(directions, x, y, angle) {
-        //         this._directions = directions;
-        //         this._x = x;
-        //         this._y = y;
-        //         this._angle = angle;
-        //     }
+        this.context = this.smallCanvas.getContext('2d');
+        this.context.strokeStyle = '#00f';
+        this.context.lineWidth = 5;
+
+        this.pageTitles = [];
+        const loader = new THREE.FontLoader();
+
+        // const self = this;
+
+        loader.load( 'title_font.json', (font) =>  {
+
+            this.pages.forEach((page) => {
+
+                this.pageTitles.push(
+                    new THREE.TextGeometry( page, {
+                        font: font,
+                        size: 0.6,
+                        height: 0.05,
+                        curveSegments: 0,
+                        bevelEnabled: false
+                    })
+                );
+
+
+            });
+
+            this.generateFractal();
+
+
+        });
+        this.generateFractal();
+console.log(["Home", "About"]);
+        // console.log(this.pageTitles);
+        // console.log((this.pageTitles)[0]);
+
+
+
+        // var depth = 9;
+        // const smallLineLength = 20;
         //
-        //     get directions() {
-        //         return this._directions;
-        //     }
+        // function drawLine(x1, y1, x2, y2){
+        //     context.moveTo(x1, y1);
+        //     context.lineTo(x2, y2);
+        // }
         //
-        //     get x() {
-        //         return this._x;
-        //     }
-        //
-        //     get y() {
-        //         return this._y;
-        //     }
-        //
-        //     get angle() {
-        //         return this._angle;
+        // function drawTree(x1, y1, angle, depth){
+        //     if (depth !== 0){
+        //         var x2 = x1 + (Math.cos(angle) * depth * initialLength);
+        //         var y2 = y1 + (Math.sin(angle) * depth * initialLength);
+        //         drawLine(x1, y1, x2, y2, depth);
+        //         drawTree(x2, y2, angle - 0.3, depth - 1);
+        //         drawTree(x2, y2, angle + 0.3, depth - 1);
         //     }
         // }
+        //
+        // context.beginPath();
+        // drawTree(0, 300, 0, depth);
+        // context.closePath();
+        // context.stroke();
 
     }
 
@@ -122,7 +133,7 @@ export class FractalGenerator {
 
     }
 
-    makeBox(x, y, z, length, angle) {
+    makeBox(x, y, z, length, angle, arrowRequired) {
 
         const box = new THREE.Mesh(this.geometry, this.material);
 
@@ -135,55 +146,56 @@ export class FractalGenerator {
         box.rotation.z = angle;
         box.scale.x = length;
 
-
-        const yDiff = (this.pages.length + 1) * 0.5;
-        const xDiff = 4;
-        const arrowSlant = 0.8;
-        const arrowDisplace = 0.2;
-        const arrowLength = 0.06;
-        const arrowHeight = 0.5;
         const sin = Math.sin(angle);
         const cos = Math.cos(angle);
 
-        const arrowBox1 = new THREE.Mesh(this.geometry, this.material);
-        arrowBox1.position.set(x - xDiff * cos - (yDiff + arrowDisplace) * sin, y + xDiff * sin + (yDiff + arrowDisplace) * cos, z);
-        arrowBox1.rotation.z = angle + arrowSlant;
-        arrowBox1.scale.x = length * arrowLength;
-        arrowBox1.scale.y = arrowHeight;
+        if (arrowRequired) {
+
+            const yDiff = (this.pages.length + 1) * 0.5;
+            const xDiff = 4.8;
+            const arrowSlant = 0.8;
+            const arrowDisplace = 0.3;
+            const arrowLength = 0.06;
+            const arrowHeight = 0.5;
+            const flatDisplace = 0.8;
+            const flatLength = 0.1;
 
 
-        const arrowBox2 = new THREE.Mesh(this.geometry, this.material);
-        // const hypo = (this.pages.length + 1) * 0.5;
-        arrowBox2.position.set(x - xDiff * cos + (yDiff - arrowDisplace) * sin, y + xDiff * sin + (yDiff - arrowDisplace) * cos, z);
-        arrowBox2.rotation.z = angle - 0.8;
-        arrowBox2.scale.x = length * 0.06;
-        arrowBox2.scale.y = 0.5;
-
-        const arrowBox3 = new THREE.Mesh(this.geometry, this.material);
-        // const hypo = (this.pages.length + 1) * 0.5;
-        arrowBox3.position.set(x - 3.4 - yDiff * Math.cos((Math.PI / 2) - angle), y + yDiff * Math.sin((Math.PI / 2) - angle), z);
-        arrowBox3.rotation.z = angle;
-        arrowBox3.scale.x = length * 0.1;
-        arrowBox3.scale.y = 0.5;
-
-        const arrow = new THREE.Group();
-        arrow.add(arrowBox1);
-        arrow.add(arrowBox2);
-        arrow.add(arrowBox3);
+            const arrowBox1 = new THREE.Mesh(this.geometry, this.material);
+            arrowBox1.position.set(x - xDiff * cos - (yDiff + arrowDisplace) * sin, y - xDiff * sin + (yDiff + arrowDisplace) * cos, z);
+            arrowBox1.rotation.z = angle + arrowSlant;
+            arrowBox1.scale.x = length * arrowLength;
+            arrowBox1.scale.y = arrowHeight;
 
 
-        this.scene.add(arrow);
-        arrow.name = "Arrow";
+            const arrowBox2 = new THREE.Mesh(this.geometry, this.material);
+            arrowBox2.position.set(x - xDiff * cos - (yDiff - arrowDisplace) * sin, y - xDiff * sin + (yDiff - arrowDisplace) * cos, z);
+            arrowBox2.rotation.z = angle - arrowSlant;
+            arrowBox2.scale.x = length * arrowLength;
+            arrowBox2.scale.y = arrowHeight;
+
+            const arrowBox3 = new THREE.Mesh(this.geometry, this.material);
+            arrowBox3.position.set(x - (xDiff - flatDisplace) * cos - yDiff * sin, y - (xDiff - flatDisplace) * sin + yDiff * cos, z);
+            arrowBox3.rotation.z = angle;
+            arrowBox3.scale.x = length * flatLength;
+            arrowBox3.scale.y = arrowHeight;
+
+            const arrow = new THREE.Group();
+            arrow.add(arrowBox1);
+            arrow.add(arrowBox2);
+            arrow.add(arrowBox3);
+
+            this.scene.add(arrow);
+            arrow.name = "Arrow";
+        }
 
         this.pages.forEach((page, index) => {
 
-
             const button = new THREE.Mesh(this.geometry, this.material);
-
             this.scene.add(button);
 
             const hypo = this.pages.length - index;
-            button.position.set(x - hypo * Math.cos((Math.PI / 2) - angle), y + hypo * Math.sin((Math.PI / 2) - angle), z);
+            button.position.set(x - hypo * sin, y + hypo * cos, z);
             button.rotation.z = angle;
             button.scale.x = length * 0.25;
 
@@ -191,9 +203,9 @@ export class FractalGenerator {
 
             const title = new THREE.Mesh(this.pageTitles[index], this.textMaterial);
             this.scene.add(title);
-            title.position.set(x - hypo * Math.cos((Math.PI / 2) - angle), y + hypo * Math.sin((Math.PI / 2) - angle), z + 0.2);
-            title.rotation.z = angle;
 
+            title.position.set(x - hypo * sin, y + hypo * cos, z + 0.5);
+            title.rotation.z = angle;
 
 
         });
@@ -205,8 +217,19 @@ export class FractalGenerator {
         const middleX = startX + (Math.cos(angle) * this.lineLength * 0.5);
         const middleY = startY + (Math.sin(angle) * this.lineLength * 0.5);
 
-        this.makeBox(middleX, middleY, 0, this.lineLength, angle);
+        const endX = startX + (Math.cos(angle) * this.lineLength);
+        const endY = startY + (Math.sin(angle) * this.lineLength);
+
+        const arrowRequired = directions.length > 1;
+        this.makeBox(middleX, middleY, 0, this.lineLength, angle, arrowRequired);
         this.lines.push({directions: directions, x: middleX, y: middleY, angle: angle});
+
+        this.context.beginPath();
+        this.context.moveTo(startX, this.smallCanvas.height * 0.5 - startY);
+        this.context.lineTo(endX, this.smallCanvas.height * 0.5 - endY);
+        this.context.closePath();
+        this.context.stroke();
+
 
     }
 
@@ -223,10 +246,10 @@ export class FractalGenerator {
             const nextLineStartX = currentLineStartX + (Math.cos(angle) * this.lineLength);
             const nextLineStartY = currentLineStartY + (Math.sin(angle) * this.lineLength);
 
-            this.drawTree(nextLineStartX, nextLineStartY, (angle - 1.2), newDirections, 0, depth);
-            this.drawTree(nextLineStartX, nextLineStartY, (angle - 0.40), newDirections, 1, depth);
-            this.drawTree(nextLineStartX, nextLineStartY, (angle + 0.40), newDirections, 2, depth);
-            this.drawTree(nextLineStartX, nextLineStartY, (angle + 1.2), newDirections, 3, depth);
+            this.drawTree(nextLineStartX, nextLineStartY, (angle + 1.2), newDirections, 0, depth);
+            this.drawTree(nextLineStartX, nextLineStartY, (angle + 0.40), newDirections, 1, depth);
+            this.drawTree(nextLineStartX, nextLineStartY, (angle - 0.40), newDirections, 2, depth);
+            this.drawTree(nextLineStartX, nextLineStartY, (angle - 1.2), newDirections, 3, depth);
 
         }
     }
@@ -278,13 +301,26 @@ export class FractalGenerator {
                 this.tl.to(clickedObject.scale, 0.2, {z: 1, ease: Expo.easeOut});
                 this.tl.to(clickedObject.position, 0.2, {z: 0, ease: Expo.easeOut}, "=-0.2");
 
+                let moreFractal = false;
                 if (pageIndex !== -1) {
                     this.currentDirections.push(pageIndex);
+                    moreFractal = true;
                 } else {
                     this.currentDirections.pop();
                 }
 
                 const newMenu = this.lines.find(line => FractalGenerator.arraysEqual(line.directions, this.currentDirections));
+
+
+                const nextTreeStartX = newMenu.x + (Math.cos(newMenu.angle) * this.lineLength * 0.5);
+                const nextTreeStartY = newMenu.y + (Math.sin(newMenu.angle) * this.lineLength * 0.5);
+                if (moreFractal) {
+                    this.drawTree(nextTreeStartX, nextTreeStartY, newMenu.angle + 1.2, this.currentDirections, 0, 1);
+                    this.drawTree(nextTreeStartX, nextTreeStartY, newMenu.angle + 0.4, this.currentDirections, 1, 1);
+                    this.drawTree(nextTreeStartX, nextTreeStartY, newMenu.angle - 0.4, this.currentDirections, 2, 1);
+                    this.drawTree(nextTreeStartX, nextTreeStartY, newMenu.angle - 1.2, this.currentDirections, 3, 1);
+
+                }
 
                 this.tl.to(this.camera.position, 0.8, {x: newMenu.x, y: newMenu.y, ease: Expo.easeOut});
                 this.tl.to(this.camera.rotation, 0.8, {z: newMenu.angle, ease: Expo.easeOut}, "=-0.8");
